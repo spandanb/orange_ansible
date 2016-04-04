@@ -1,0 +1,10 @@
+---
+- hosts: contr
+  tasks:
+  - name: touch file
+    command: touch /home/ubuntu/hello_contr
+
+- hosts: agent
+  tasks:
+  - name: touch file
+    command: touch /home/ubuntu/hello_agent
