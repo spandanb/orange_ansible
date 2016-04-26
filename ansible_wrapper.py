@@ -5,9 +5,12 @@ from ansible.vars import VariableManager
 from ansible.parsing.dataloader import DataLoader
 from ansible.executor import playbook_executor
 from ansible.utils.display import Display
+import sys
 
 #Take from: https://serversforhackers.com/running-ansible-2-programmatically
 
+#What is this for?
+os.environ["VAULT_PASS"] = "password"
 
 class Options(object):
     """
@@ -66,24 +69,38 @@ class Options(object):
 
 class Runner(object):
 
-    def __init__(self, hosts, playbook, private_key_file, run_data, become_pass, verbosity=0):
+    def __init__(self, 
+                 hosts=None, 
+                 playbook=None, 
+                 remote_user='ubuntu',
+                 private_key_file='~/.ssh/id_rsa',
+                 become_pass='', 
+                 verbosity=0, 
+                 extra_vars=''):
         """
-        hosts is ["10.12.1.38" | ["10.12.1.38", "10.12.1.39"] | {"contr":["10.12.1.38"], "agent":["10.12.1.39"]} ]
-        playbook is the path to the playbook file
+        Arguments:
+            hosts:- The hosts. This can be either IP string, e.g. ["10.1.1.1"],
+                        list of IPs, ["10.1.1.1", "10.1.1.5"],
+                        a map of group name to list of members, e.g. {"contr":["10.1.1.1"], "agent":["10.1.1.5"]}
+            playbook:- is the path to the playbook file
+            become_pass:- seems like the password
+                   for priviledge escalation 
 
-        NB: remote_user is set to ubuntu
         """
+        if not hosts or not playbook:
+            raise ValueError("hosts and playbook arguments must be defined")
 
-        self.run_data = run_data
+        #NOTE: used for saving logs via callback- I don't need this so hardcode it
+        self.run_data = {'user_id':''} 
 
         self.options = Options()
-        self.options.private_key_file = private_key_file
+        self.options.private_key_file = os.path.expanduser(private_key_file)
         self.options.verbosity = verbosity
         self.options.connection = 'ssh'  # Need a connection type "smart" or "ssh"
         self.options.become = True
         self.options.become_method = 'sudo'
         self.options.become_user = 'root'
-        self.options.remote_user = 'ubuntu'
+        self.options.remote_user = remote_user
 
         # Set global verbosity
         self.display = Display()
@@ -178,6 +195,31 @@ class Runner(object):
 
         return stats
 
+def playbook(playbook=None, hosts=None, 
+             private_key_file='~/.ssh/id_rsa', 
+             verbosity=1, 
+             remote_user='ubuntu', 
+             extra_vars=''):
+    """
+    Calls a playbook specified by the user.
+    Utility function that wraps instantiation of Runner object 
+        and invokation of run method.
+
+    Arguments:-
+        playbook:- path to playbook
+        host:-
+    """
+    runner = Runner(
+        hosts=hosts,
+        playbook=playbook,
+        private_key_file=private_key_file,
+        verbosity=verbosity,
+        remote_user=remote_user,
+        extra_vars=extra_vars
+    )
+    stats = runner.run()
+    return stats
+
 """
 roles dir in same dir as script
 playbooks pb_dir also in the same dir
@@ -185,4 +227,8 @@ playbooks pb_dir also in the same dir
 VAULT_PASS envvar
 """
 if __name__ == "__main__":
-    pass
+    playbook(
+        hosts='10.12.1.40',
+        playbook='run.yaml'
+    ) 
+
