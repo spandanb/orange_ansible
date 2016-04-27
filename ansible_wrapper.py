@@ -66,7 +66,47 @@ class Options(object):
         self.listtags = listtags
         self.module_path = module_path
 
+class InventoryWrapper(object):
+    """
+    Class that encapsulates an inventoy and 
+    provides various utiliy functions.
+    """
+    
+    def __init__(self, hosts):
+        """
+        NB: hosts can be dict, list, str
+        """
+        self.hosts = hosts
 
+    def __str__(self):
+        if type(self.hosts) is str:
+            return "[run_hosts]\n{}".format(self.hosts)
+
+        elif type(self.hosts) is list:
+            inv = "[run_hosts]\n"
+            inv += "\n".join(["{}".format(h) for h in self.hosts])
+            return inv
+
+        elif type(self.hosts) is dict:
+            inv = ""
+            for group, nodes in self.hosts.items():
+                inv += "[{}]\n".format(group)
+                inv += "\n".join(["{}".format(n) for n in nodes])
+                inv += "\n"
+            return inv
+    
+    def host_list(self):
+        """
+        Returns a list of host addresses 
+        """
+        if type(self.hosts) is str:
+            return [self.hosts]
+        elif type(self.hosts) is list:
+            return self.hosts
+        else:
+            return self.host.values()
+
+        
 class Runner(object):
 
     def __init__(self, 
@@ -124,10 +164,8 @@ class Runner(object):
         # pass hosts in without using a parsed template :(
         # (Maybe you know how?)
         self.hosts = NamedTemporaryFile(delete=False, dir=os.getcwd())
-#        self.hosts.write("""[run_hosts]
-#%s
-#""" % hostnames)
-        self.hosts.write(self.create_inventory(hosts))
+        self.inventory_wrapper = InventoryWrapper(hosts)
+        self.hosts.write(str(self.inventory_wrapper))
         self.hosts.close()
 
         # Set inventory, using most of above objects
@@ -143,30 +181,6 @@ class Runner(object):
             loader=self.loader,
             options=self.options,
             passwords=passwords)
-
-    def create_inventory(self, hosts):
-        """
-        Creates an inventory file from hosts
-        hosts can be a string
-        host can be list
-        hosts can be dict of group name to list of hosts
-        """
-
-        if type(hosts) is str:
-            return "[run_hosts]\n{}".format(hosts)
-
-        elif type(hosts) is list:
-            inv = "[run_hosts]\n"
-            inv += "\n".join(["{}".format(h) for h in hosts])
-            return inv
-
-        elif type(hosts) is dict:
-            inv = ""
-            for group, nodes in hosts.items():
-                inv += "[{}]\n".format(group)
-                inv += "\n".join(["{}".format(n) for n in nodes])
-                inv += "\n"
-            return inv
 
     def run(self):
         # Results of PlaybookExecutor
@@ -218,7 +232,9 @@ def playbook(playbook=None, hosts=None,
         extra_vars=extra_vars
     )
     stats = runner.run()
-    return stats
+    #Stats is not a useful object to return
+    return {host:stats.summarize(host)
+            for host in runner.inventory_wrapper.host_list()}
 
 """
 roles dir in same dir as script
@@ -227,7 +243,7 @@ playbooks pb_dir also in the same dir
 VAULT_PASS envvar
 """
 if __name__ == "__main__":
-    playbook(
+    print playbook(
         hosts='10.12.1.40',
         playbook='run.yaml'
     ) 

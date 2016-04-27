@@ -2,7 +2,6 @@
 Ansible wrapper compatible with Ansible 1.9.x
 """
 from ansible.playbook import PlayBook
-from ansible.playbook import PlayBook
 import ansible.playbook
 import ansible.inventory
 from ansible import callbacks
