@@ -2,5 +2,5 @@
 - hosts: all 
   tasks:
   - name: touch file
-    command: touch /home/ubuntu/hello_contr
-
+    command: touch /home/ubuntu/{{filename}}
+    #command: touch /home/ubuntu/hello

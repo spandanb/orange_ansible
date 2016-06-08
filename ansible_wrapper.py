@@ -116,7 +116,7 @@ class Runner(object):
                  private_key_file='~/.ssh/id_rsa',
                  become_pass='', 
                  verbosity=0, 
-                 extra_vars=''):
+                 extra_vars={}):
         """
         Arguments:
             hosts:- The hosts. This can be either IP string, e.g. ["10.1.1.1"],
@@ -130,8 +130,7 @@ class Runner(object):
         if not hosts or not playbook:
             raise ValueError("hosts and playbook arguments must be defined")
 
-        #NOTE: used for saving logs via callback- I don't need this so hardcode it
-        self.run_data = {'user_id':''} 
+        self.run_data = extra_vars
 
         self.options = Options()
         self.options.private_key_file = os.path.expanduser(private_key_file)
@@ -198,9 +197,10 @@ class Runner(object):
         # Dirty hack to send callback to save logs with data we want
         # Note that function "record_logs" is one I created and put into
         # the playbook callback file
+        #FIXME: get rid of the following, since this is not being used
         self.pbex._tqm.send_callback(
             'record_logs',
-            user_id=self.run_data['user_id'],
+            user_id=None, #self.run_data['user_id'],
             success=run_success
         )
 
@@ -213,7 +213,7 @@ def playbook(playbook=None, hosts=None,
              private_key_file='~/.ssh/id_rsa', 
              verbosity=1, 
              remote_user='ubuntu', 
-             extra_vars=''):
+             extra_vars={}):
     """
     Calls a playbook specified by the user.
     Utility function that wraps instantiation of Runner object 
@@ -237,6 +237,12 @@ def playbook(playbook=None, hosts=None,
             for host in runner.inventory_wrapper.host_list()}
 
 """
+TODO 
+1)username is hardcoded to ubuntu
+  Need way to better express hosts file
+"""
+
+"""
 roles dir in same dir as script
 playbooks pb_dir also in the same dir
 
@@ -244,7 +250,8 @@ VAULT_PASS envvar
 """
 if __name__ == "__main__":
     print playbook(
-        hosts='10.12.1.40',
-        playbook='run.yaml'
+        hosts='10.12.1.17',
+        playbook='run.yaml',
+        extra_vars={'filename':'yahhoo'}
     ) 
 
