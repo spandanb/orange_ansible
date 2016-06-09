@@ -167,7 +167,7 @@ class Runner(object):
         # Parse hosts, I haven't found a good way to
         # pass hosts in without using a parsed template :(
         # (Maybe you know how?)
-        self.hosts = NamedTemporaryFile(delete=False, dir=os.getcwd())
+        self.hosts = NamedTemporaryFile(delete=True , dir=os.getcwd())
         self.inventory_wrapper = InventoryWrapper(hosts)
         self.hosts.write(str(self.inventory_wrapper))
         self.hosts.close()
