@@ -1,3 +1,3 @@
 #!/bin/bash
 
-ansible-playbook -i ./hosts run.yaml -v -f 10
+ansible-playbook -i ./hosts run.yaml --extra-vars "filename=foobar"

@@ -74,7 +74,12 @@ class InventoryWrapper(object):
     
     def __init__(self, hosts):
         """
-        NB: hosts can be dict, list, str
+        Arguments:- 
+        hosts:- collection of host(s) 
+                hosts can be:
+                str  :- host_ip_addr
+                list :- [host_ip_addr]
+                dict :- [group_name: [host_ip_addr]]
         """
         self.hosts = hosts
 
@@ -104,7 +109,7 @@ class InventoryWrapper(object):
         elif type(self.hosts) is list:
             return self.hosts
         else:
-            return self.host.values()
+            return [host for group in self.hosts.values() for host in group]
 
         
 class Runner(object):
@@ -235,6 +240,7 @@ def playbook(playbook=None, hosts=None,
     #Stats is not a useful object to return
     return {host:stats.summarize(host)
             for host in runner.inventory_wrapper.host_list()}
+
 
 """
 TODO 
