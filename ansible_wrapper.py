@@ -79,7 +79,8 @@ class InventoryWrapper(object):
                 hosts can be:
                 str  :- host_ip_addr
                 list :- [host_ip_addr]
-                dict :- [group_name: [host_ip_addr]]
+                dict :- {group_name: host_ip_addr}
+                dict :- {group_name: [host_ip_addr]}
         """
         self.hosts = hosts
 
@@ -96,7 +97,10 @@ class InventoryWrapper(object):
             inv = ""
             for group, nodes in self.hosts.items():
                 inv += "[{}]\n".format(group)
-                inv += "\n".join(["{}".format(n) for n in nodes])
+                if type(nodes) is list:
+                    inv += "\n".join(["{}".format(n) for n in nodes])
+                else: #str
+                    inv += nodes 
                 inv += "\n"
             return inv
     
@@ -109,7 +113,11 @@ class InventoryWrapper(object):
         elif type(self.hosts) is list:
             return self.hosts
         else:
-            return [host for group in self.hosts.values() for host in group]
+            if type(self.hosts.items()[0][1]) is list:
+                return [host for group in self.hosts.values() for host in group]
+            else:
+                return [host for host in self.hosts.values()]
+                
 
         
 class Runner(object):
@@ -124,9 +132,8 @@ class Runner(object):
                  extra_vars={}):
         """
         Arguments:
-            hosts:- The hosts. This can be either IP string, e.g. ["10.1.1.1"],
-                        list of IPs, ["10.1.1.1", "10.1.1.5"],
-                        a map of group name to list of members, e.g. {"contr":["10.1.1.1"], "agent":["10.1.1.5"]}
+            hosts:- The hosts. See the docstring of InventoryWrapper.__init__
+                    for more details on the acceptable formats.
             playbook:- is the path to the playbook file
             become_pass:- seems like the password
                    for priviledge escalation 
@@ -167,7 +174,7 @@ class Runner(object):
         # Parse hosts, I haven't found a good way to
         # pass hosts in without using a parsed template :(
         # (Maybe you know how?)
-        self.hosts = NamedTemporaryFile(delete=True , dir=os.getcwd())
+        self.hosts = NamedTemporaryFile(delete=False, dir=os.getcwd())
         self.inventory_wrapper = InventoryWrapper(hosts)
         self.hosts.write(str(self.inventory_wrapper))
         self.hosts.close()
